@@ -132,3 +132,25 @@ Next live action is configure a host-owned frontier Inference client and run smo
 - `test/latent_investigator/world_test.exs`
 - `test/support/fixtures.ex`
 - `mix.lock` (new dependency lockfile).
+
+## Live preparation continuation — 2026-09-29
+
+Prepared explicit scripts for `jev` and `gpt-6.1-sol` via Codex. See
+[LIVE_CHECKS.md](LIVE_CHECKS.md) for frozen smoke knobs and commands.
+
+Commands and results:
+
+- `mix format scripts/*.exs`: exit 0.
+- Initial `mix run scripts/live_preflight.exs`: exit 1, missing required ASM
+  `:provider` in validation options; repaired by supplying `provider: :codex`.
+  First dev compilation emitted dependency warnings (including toml, websockex,
+  and pristine); dependency sources were not altered.
+- `mix run scripts/live_preflight.exs` after repair: exit 0; local client
+  construction, options, capability declarations, Codex login, and TypeSafe
+  credential presence pass; no model calls.
+- `mix ci`: exit 0; 29 tests pass, seed 518441.
+- Live baseline, structured B1, System One connection check, Gate 1, Gate 2:
+  **NOT_RUN**, per user's instruction to pause before live execution.
+- `mix run -e 'source = File.read!("scripts/live_check.exs"); ast = Code.string_to_quoted!(source); Code.eval_quoted(quote do: fn -> unquote(ast) end); IO.puts("Live script compiled without execution")'`: exit 0; compiled without invoking the function or sending requests.
+- `mix format --check-formatted scripts/*.exs`: exit 0.
+- `git diff --check`: exit 0.
