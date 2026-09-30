@@ -38,7 +38,11 @@ defmodule LatentInvestigator.Experiment.Gate2 do
     arms = [
       oracle:
         {LatentInvestigator.Evaluator.Oracle,
-         %Context{provider: :oracle, model: "oracle", oracle_fun: &StrategicNetwork.oracle_judgment(env, &1)}},
+         %Context{
+           provider: :oracle,
+           model: "oracle",
+           oracle_fun: &StrategicNetwork.oracle_judgment(env, &1)
+         }},
       frontier:
         {LatentInvestigator.Evaluator.Inference,
          %Context{client: frontier, provider: :frontier, config: %{batch_size: batch_size}}},
@@ -50,7 +54,11 @@ defmodule LatentInvestigator.Experiment.Gate2 do
          %Context{client: system_one, provider: :system_one}}
     ]
 
-    results = Map.new(arms, fn {name, {module, context}} -> {name, score_arm(frozen, env, module, context)} end)
+    results =
+      Map.new(arms, fn {name, {module, context}} ->
+        {name, score_arm(frozen, env, module, context)}
+      end)
+
     oracle_judgments = get_in(results, [:oracle, :judgments]) || %{}
 
     agreement =
@@ -83,7 +91,8 @@ defmodule LatentInvestigator.Experiment.Gate2 do
         %{
           status: :ok,
           metrics: Metrics.target_metrics(report, StrategicNetwork.evaluation_targets(env)),
-          resolution_balanced_accuracy: Metrics.resolution_balanced_accuracy(report, StrategicNetwork.evaluation_targets(env)),
+          resolution_balanced_accuracy:
+            Metrics.resolution_balanced_accuracy(report, StrategicNetwork.evaluation_targets(env)),
           resources: report.resource_summary,
           report: report,
           judgments: Map.new(judgments, &{&1.id, %{kind: &1.kind, value: &1.value}})
@@ -95,7 +104,12 @@ defmodule LatentInvestigator.Experiment.Gate2 do
   end
 
   defp agreement(left, right) do
-    common = Map.keys(left) |> MapSet.new() |> MapSet.intersection(Map.keys(right) |> MapSet.new()) |> MapSet.to_list()
+    common =
+      Map.keys(left)
+      |> MapSet.new()
+      |> MapSet.intersection(Map.keys(right) |> MapSet.new())
+      |> MapSet.to_list()
+
     overall = exact_agreement(common, left, right)
 
     by_kind =
@@ -107,7 +121,9 @@ defmodule LatentInvestigator.Experiment.Gate2 do
   end
 
   defp exact_agreement(ids, left, right) do
-    matches = Enum.count(ids, fn id -> get_in(left, [id, :value]) == get_in(right, [id, :value]) end)
+    matches =
+      Enum.count(ids, fn id -> get_in(left, [id, :value]) == get_in(right, [id, :value]) end)
+
     %{count: length(ids), exact_agreement: if(ids == [], do: 0.0, else: matches / length(ids))}
   end
 end

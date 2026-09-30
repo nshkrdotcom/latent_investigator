@@ -3,9 +3,14 @@ defmodule LatentInvestigator.Config do
 
   def inference_client!(lane) when lane in [:frontier, :cheap] do
     case Application.get_env(:latent_investigator, client_key(lane)) do
-      %Inference.Client{} = client -> client
-      nil -> raise "No #{lane} Inference.Client configured. Inject one with Application.put_env(:latent_investigator, #{client_key(lane)}, client)."
-      other -> raise "Invalid #{lane} inference client: #{inspect(other)}"
+      %Inference.Client{} = client ->
+        client
+
+      nil ->
+        raise "No #{lane} Inference.Client configured. Inject one with Application.put_env(:latent_investigator, #{client_key(lane)}, client)."
+
+      other ->
+        raise "Invalid #{lane} inference client: #{inspect(other)}"
     end
   end
 

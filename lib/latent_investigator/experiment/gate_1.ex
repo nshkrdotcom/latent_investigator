@@ -15,7 +15,16 @@ defmodule LatentInvestigator.Experiment.Gate1 do
     case_classes = Keyword.get(opts, :case_classes, [:resolvable, :non_identifiable, :transition])
     access = Keyword.get(opts, :access_regime, :public)
     batch_size = Keyword.get(opts, :judgment_batch_size, 16)
-    projection = CostProjection.project(Keyword.merge(opts, profiles: profiles, seeds: seeds, replicates: replicates, case_classes: case_classes))
+
+    projection =
+      CostProjection.project(
+        Keyword.merge(opts,
+          profiles: profiles,
+          seeds: seeds,
+          replicates: replicates,
+          case_classes: case_classes
+        )
+      )
 
     rows =
       for profile <- profiles,
@@ -33,7 +42,11 @@ defmodule LatentInvestigator.Experiment.Gate1 do
               generator: LatentInvestigator.Generator.Inference,
               generator_context: %GeneratorContext{client: client, provider: :frontier},
               evaluator: LatentInvestigator.Evaluator.Inference,
-              evaluator_context: %EvaluatorContext{client: client, provider: :frontier, config: %{batch_size: batch_size}},
+              evaluator_context: %EvaluatorContext{
+                client: client,
+                provider: :frontier,
+                config: %{batch_size: batch_size}
+              },
               model_replicate: replicate,
               arm: :b1
             )
@@ -73,7 +86,11 @@ defmodule LatentInvestigator.Experiment.Gate1 do
     b0a_target = aggregate_target(rows, :b0a)
     b0b_target = aggregate_target(rows, :b0b)
     b1_target = aggregate_target(rows, :b1)
-    {baseline_arm, baseline_target} = if b0b_target.macro_f1 >= b0a_target.macro_f1, do: {:b0b, b0b_target}, else: {:b0a, b0a_target}
+
+    {baseline_arm, baseline_target} =
+      if b0b_target.macro_f1 >= b0a_target.macro_f1,
+        do: {:b0b, b0b_target},
+        else: {:b0a, b0a_target}
 
     b0a_ba = Metrics.resolution_balanced_accuracy_pairs(b0a_target.pairs)
     b0b_ba = Metrics.resolution_balanced_accuracy_pairs(b0b_target.pairs)
@@ -90,7 +107,10 @@ defmodule LatentInvestigator.Experiment.Gate1 do
     p1_advantage = b1_target.macro_f1 - baseline_target.macro_f1
     p2_advantage = b1_retention - baseline_retention
     p3_success_advantage = b1_recovery.success_rate - baseline_recovery.success_rate
-    p3_latency_advantage = latency_advantage(baseline_recovery.mean_recovery_round, b1_recovery.mean_recovery_round)
+
+    p3_latency_advantage =
+      latency_advantage(baseline_recovery.mean_recovery_round, b1_recovery.mean_recovery_round)
+
     resolution_delta = b1_ba - baseline_ba
     compute = compute_summary(rows)
 
@@ -101,15 +121,37 @@ defmodule LatentInvestigator.Experiment.Gate1 do
     %{
       stronger_monolithic_arm: baseline_arm,
       primary: %{
-        p1_final_investigation_macro_f1: %{b1: b1_target.macro_f1, baseline: baseline_target.macro_f1, advantage: p1_advantage, threshold: 0.10, pass: p1},
-        p2_true_world_retention: %{b1: b1_retention, baseline: baseline_retention, advantage: p2_advantage},
-        p3_disconfirmation_recovery: %{b1: b1_recovery, baseline: baseline_recovery, success_advantage: p3_success_advantage, recovery_round_advantage: p3_latency_advantage}
+        p1_final_investigation_macro_f1: %{
+          b1: b1_target.macro_f1,
+          baseline: baseline_target.macro_f1,
+          advantage: p1_advantage,
+          threshold: 0.10,
+          pass: p1
+        },
+        p2_true_world_retention: %{
+          b1: b1_retention,
+          baseline: baseline_retention,
+          advantage: p2_advantage
+        },
+        p3_disconfirmation_recovery: %{
+          b1: b1_recovery,
+          baseline: baseline_recovery,
+          success_advantage: p3_success_advantage,
+          recovery_round_advantage: p3_latency_advantage
+        }
       },
-      resolution_balanced_accuracy: %{b1: b1_ba, baseline: baseline_ba, delta: resolution_delta, noninferiority_margin: -0.05, pass: guardrail},
+      resolution_balanced_accuracy: %{
+        b1: b1_ba,
+        baseline: baseline_ba,
+        delta: resolution_delta,
+        noninferiority_margin: -0.05,
+        pass: guardrail
+      },
       compute_match: compute,
       automatic_continuation_precheck: p1 and p2_or_p3 and guardrail,
       requires_manual_validity_review: true,
-      note: "The precheck is not a publication claim. Continue only after checking compute mismatch, leakage, baseline quality, and failure traces."
+      note:
+        "The precheck is not a publication claim. Continue only after checking compute mismatch, leakage, baseline quality, and failure traces."
     }
   end
 
@@ -140,7 +182,8 @@ defmodule LatentInvestigator.Experiment.Gate1 do
     %{
       available_count: length(available),
       unavailable_count: length(values) - length(available),
-      within_10pct_rate: if(available == [], do: nil, else: rate_values(available, & &1.within_10pct)),
+      within_10pct_rate:
+        if(available == [], do: nil, else: rate_values(available, & &1.within_10pct)),
       mean_ratio: if(ratios == [], do: nil, else: mean(ratios)),
       systematic_under_budget: if(ratios == [], do: nil, else: mean(ratios) < 0.90)
     }
@@ -177,14 +220,14 @@ defmodule LatentInvestigator.Experiment.Gate1 do
   defp maybe_put_compute_budget(opts, _target_tokens),
     do: Keyword.delete(opts, :compute_budget_tokens)
 
-  defp resource_tokens(resources), do: (resources[:input_tokens] || 0) + (resources[:output_tokens] || 0)
+  defp resource_tokens(resources),
+    do: (resources[:input_tokens] || 0) + (resources[:output_tokens] || 0)
 
   defp rate(rows, fun), do: rate_values(rows, fun)
   defp rate_values([], _fun), do: 0.0
   defp rate_values(values, fun), do: Enum.count(values, fun) / length(values)
   defp ratio(_n, 0), do: 0.0
   defp ratio(n, d), do: n / d
-  defp mean([]), do: 0.0
   defp mean(xs), do: Enum.sum(xs) / length(xs)
 
   defp latency_advantage(nil, _), do: 0.0

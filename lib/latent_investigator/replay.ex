@@ -8,13 +8,16 @@ defmodule LatentInvestigator.Replay do
          {:ok, state} <- read_json(Path.join(run_dir, "state.json")),
          {:ok, events} <- read_jsonl(Path.join(run_dir, "events.jsonl")),
          {:ok, evaluation} <- read_optional_json(Path.join(run_dir, "evaluation.json")) do
-      {:ok, %{manifest: manifest, report: report, state: state, events: events, evaluation: evaluation}}
+      {:ok,
+       %{manifest: manifest, report: report, state: state, events: events, evaluation: evaluation}}
     end
   end
 
   def verify(run_dir) do
     with {:ok, expected} <- read_json(Path.join(run_dir, "hashes.json")) do
-      mismatches = Enum.reject(expected, fn {name, hash} -> sha256(Path.join(run_dir, name)) == hash end)
+      mismatches =
+        Enum.reject(expected, fn {name, hash} -> sha256(Path.join(run_dir, name)) == hash end)
+
       if mismatches == [], do: :ok, else: {:error, {:hash_mismatch, mismatches}}
     end
   end
@@ -36,11 +39,14 @@ defmodule LatentInvestigator.Replay do
     case File.read(path) do
       {:ok, bytes} ->
         {:ok, bytes |> String.split("\n", trim: true) |> Enum.map(&JSON.decode!/1)}
-      {:error, reason} -> {:error, {path, reason}}
+
+      {:error, reason} ->
+        {:error, {path, reason}}
     end
   rescue
     error -> {:error, {path, error}}
   end
 
-  defp sha256(path), do: path |> File.read!() |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16(case: :lower)
+  defp sha256(path),
+    do: path |> File.read!() |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16(case: :lower)
 end

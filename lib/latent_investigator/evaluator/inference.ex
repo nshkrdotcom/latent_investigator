@@ -6,12 +6,20 @@ defmodule LatentInvestigator.Evaluator.Inference do
   alias LatentInvestigator.Evaluator.{Context, JudgmentRequest}
 
   @impl true
-  def judge(%Context{client: %Inference.Client{} = client} = context, %JudgmentRequest{} = request) do
+  def judge(
+        %Context{client: %Inference.Client{} = client} = context,
+        %JudgmentRequest{} = request
+      ) do
     started = System.monotonic_time(:microsecond)
     schema = Schema.local_judgment(request.kind)
     name = "latent_investigator_#{request.kind}"
 
-    with {:ok, response} <- Inference.complete(client, Prompt.local_judgment(request), model_opts(context, name, schema)),
+    with {:ok, response} <-
+           Inference.complete(
+             client,
+             Prompt.local_judgment(request),
+             model_opts(context, name, schema)
+           ),
          object when is_map(object) <- response.object,
          {:ok, value} <- normalize_value(request.kind, Util.get(object, :value)) do
       latency = (System.monotonic_time(:microsecond) - started) / 1000
@@ -36,6 +44,7 @@ defmodule LatentInvestigator.Evaluator.Inference do
          cost: response.cost,
          round: request.round,
          metadata: %{
+           lane: context.provider,
            rationale: Util.truncate(Util.get(object, :rationale, ""), 500),
            response_id: response.id,
            transport_call_id: transport_id,
@@ -58,7 +67,9 @@ defmodule LatentInvestigator.Evaluator.Inference do
       sequential(context, requests)
     else
       requests
-      |> Enum.group_by(fn request -> {request.kind, Util.get(request.metadata, :evidence_unit_id)} end)
+      |> Enum.group_by(fn request ->
+        {request.kind, Util.get(request.metadata, :evidence_unit_id)}
+      end)
       |> Enum.sort_by(fn {key, _} -> inspect(key) end)
       |> Enum.reduce_while({:ok, []}, fn {_key, group}, {:ok, acc} ->
         result =
@@ -80,13 +91,21 @@ defmodule LatentInvestigator.Evaluator.Inference do
     end
   end
 
-  defp judge_batch(%Context{client: %Inference.Client{} = client} = context, [%JudgmentRequest{} = first | _] = requests) do
+  defp judge_batch(
+         %Context{client: %Inference.Client{} = client} = context,
+         [%JudgmentRequest{} = first | _] = requests
+       ) do
     started = System.monotonic_time(:microsecond)
     batch_id = ID.stable("batch", Enum.map(requests, & &1.id))
     schema = Schema.local_judgment_batch(first.kind)
     name = "latent_investigator_#{first.kind}_batch"
 
-    with {:ok, response} <- Inference.complete(client, Prompt.local_judgment_batch(requests), model_opts(context, name, schema)),
+    with {:ok, response} <-
+           Inference.complete(
+             client,
+             Prompt.local_judgment_batch(requests),
+             model_opts(context, name, schema)
+           ),
          object when is_map(object) <- response.object,
          results when is_list(results) <- Util.get(object, :results),
          {:ok, indexed} <- index_results(results, requests) do
@@ -121,6 +140,7 @@ defmodule LatentInvestigator.Evaluator.Inference do
                 cost: response.cost,
                 round: request.round,
                 metadata: %{
+                  lane: context.provider,
                   rationale: Util.truncate(Util.get(result, :rationale, ""), 500),
                   response_id: response.id,
                   transport_call_id: transport_id,
@@ -165,7 +185,10 @@ defmodule LatentInvestigator.Evaluator.Inference do
       else
         {:error,
          {:batch_request_mismatch,
-          %{missing: MapSet.difference(expected, actual) |> MapSet.to_list(), unexpected: MapSet.difference(actual, expected) |> MapSet.to_list()}}}
+          %{
+            missing: MapSet.difference(expected, actual) |> MapSet.to_list(),
+            unexpected: MapSet.difference(actual, expected) |> MapSet.to_list()
+          }}}
       end
     end
   end
@@ -190,13 +213,21 @@ defmodule LatentInvestigator.Evaluator.Inference do
   defp normalize_value(kind, value) do
     allowed =
       case kind do
-        :source_dependence -> ~w(same_source likely_related unclear likely_independent independent)
-        k when k in [:semantic_entailment, :textual_contradiction] -> ~w(yes no unclear)
-        _ -> ~w(strongly_against against neutral supports strongly_supports)
+        :source_dependence ->
+          ~w(same_source likely_related unclear likely_independent independent)
+
+        k when k in [:semantic_entailment, :textual_contradiction] ->
+          ~w(yes no unclear)
+
+        _ ->
+          ~w(strongly_against against neutral supports strongly_supports)
       end
 
     text = if is_atom(value), do: Atom.to_string(value), else: value
-    if text in allowed, do: {:ok, String.to_existing_atom(text)}, else: {:error, {:invalid_value, value}}
+
+    if text in allowed,
+      do: {:ok, String.to_existing_atom(text)},
+      else: {:error, {:invalid_value, value}}
   rescue
     ArgumentError -> {:error, {:invalid_value, value}}
   end

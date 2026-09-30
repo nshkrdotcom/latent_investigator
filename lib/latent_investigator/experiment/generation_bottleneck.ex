@@ -30,8 +30,17 @@ defmodule LatentInvestigator.Experiment.GenerationBottleneck do
              k_initial: Keyword.get(opts, :k_initial, 8)
            ),
          truth <- oracle_truth(env),
-         {:ok, generated_result} <- run_frozen(env, generated, client, batch_size, opts, :generated_only),
-         {:ok, oracle_result} <- run_frozen(env, dedupe_worlds(generated ++ [truth]), client, batch_size, opts, :generation_oracle) do
+         {:ok, generated_result} <-
+           run_frozen(env, generated, client, batch_size, opts, :generated_only),
+         {:ok, oracle_result} <-
+           run_frozen(
+             env,
+             dedupe_worlds(generated ++ [truth]),
+             client,
+             batch_size,
+             opts,
+             :generation_oracle
+           ) do
       generated_score = Common.score_structured(generated_result, StrategicNetwork)
       oracle_score = Common.score_structured(oracle_result, StrategicNetwork)
 
@@ -48,9 +57,11 @@ defmodule LatentInvestigator.Experiment.GenerationBottleneck do
          generation_oracle: oracle_score,
          delta: %{
            final_macro_f1: oracle_score.target.macro_f1 - generated_score.target.macro_f1,
-           true_world_retention: bool_delta(oracle_score.true_world_retention, generated_score.true_world_retention)
+           true_world_retention:
+             bool_delta(oracle_score.true_world_retention, generated_score.true_world_retention)
          },
-         interpretation: "A positive oracle delta isolates candidate omission only within this controlled simulator and frozen downstream pipeline."
+         interpretation:
+           "A positive oracle delta isolates candidate omission only within this controlled simulator and frozen downstream pipeline."
        }}
     end
   end
@@ -65,9 +76,16 @@ defmodule LatentInvestigator.Experiment.GenerationBottleneck do
       Keyword.merge(opts,
         simulator: StrategicNetwork,
         generator: LatentInvestigator.Generator.Oracle,
-        generator_context: %GeneratorContext{provider: :oracle_generation, config: %{worlds: worlds}},
+        generator_context: %GeneratorContext{
+          provider: :oracle_generation,
+          config: %{worlds: worlds}
+        },
         evaluator: LatentInvestigator.Evaluator.Inference,
-        evaluator_context: %EvaluatorContext{client: client, provider: :frontier, config: %{batch_size: batch_size}},
+        evaluator_context: %EvaluatorContext{
+          client: client,
+          provider: :frontier,
+          config: %{batch_size: batch_size}
+        },
         disable_attack: true,
         disable_repair: true,
         arm: arm

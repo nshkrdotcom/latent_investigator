@@ -16,7 +16,9 @@ defmodule LatentInvestigator.Provenance do
     %{graph | nodes: Map.put(graph.nodes, id, Map.put(Util.map(attrs), :id, id))}
   end
 
-  def put_edge(%__MODULE__{} = graph, from, to, type, metadata \\ %{}) when type in @edge_types do
+  def put_edge(graph, from, to, type, metadata \\ %{})
+
+  def put_edge(%__MODULE__{} = graph, from, to, type, metadata) when type in @edge_types do
     from = to_string(from)
     to = to_string(to)
     graph = graph |> put_node(from) |> put_node(to)
@@ -24,10 +26,14 @@ defmodule LatentInvestigator.Provenance do
     if edge in graph.edges, do: graph, else: %{graph | edges: [edge | graph.edges]}
   end
 
-  def put_edge(_graph, _from, _to, type, _metadata), do: raise(ArgumentError, "unsupported provenance edge #{inspect(type)}")
+  def put_edge(_graph, _from, _to, type, _metadata),
+    do: raise(ArgumentError, "unsupported provenance edge #{inspect(type)}")
 
   def merge(%__MODULE__{} = left, %__MODULE__{} = right) do
-    %__MODULE__{nodes: Map.merge(left.nodes, right.nodes), edges: Enum.uniq(left.edges ++ right.edges)}
+    %__MODULE__{
+      nodes: Map.merge(left.nodes, right.nodes),
+      edges: Enum.uniq(left.edges ++ right.edges)
+    }
   end
 
   def evidence_units(%__MODULE__{} = graph, observations) do
@@ -38,13 +44,27 @@ defmodule LatentInvestigator.Provenance do
     {units, _seen} =
       Enum.reduce(observations, {[], MapSet.new()}, fn obs, {units, seen} ->
         node = Map.fetch!(obs_nodes, obs.id)
+
         if MapSet.member?(seen, node) do
           {units, seen}
         else
           component = component(node, adjacency)
-          member_obs = Enum.filter(observations, fn candidate -> Map.fetch!(obs_nodes, candidate.id) in component end)
+
+          member_obs =
+            Enum.filter(observations, fn candidate ->
+              Map.fetch!(obs_nodes, candidate.id) in component
+            end)
+
           seen = Enum.reduce(component, seen, &MapSet.put(&2, &1))
-          id = component |> Enum.sort() |> Enum.join("|") |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16(case: :lower) |> binary_part(0, 12)
+
+          id =
+            component
+            |> Enum.sort()
+            |> Enum.join("|")
+            |> then(&:crypto.hash(:sha256, &1))
+            |> Base.encode16(case: :lower)
+            |> binary_part(0, 12)
+
           unit = %{
             id: "evidence_#{id}",
             observation_ids: Enum.map(member_obs, & &1.id),
@@ -52,6 +72,7 @@ defmodule LatentInvestigator.Provenance do
             observations: member_obs,
             dependence: component_dependence(graph, component, member_obs)
           }
+
           {[unit | units], seen}
         end
       end)
@@ -66,8 +87,9 @@ defmodule LatentInvestigator.Provenance do
 
   defp dependency_adjacency(graph) do
     base = Map.new(Map.keys(graph.nodes), &{&1, MapSet.new()})
+
     Enum.reduce(graph.edges, base, fn edge, acc ->
-      if edge.type in @dependent_types ++ @uncertain_types do
+      if edge.type in (@dependent_types ++ @uncertain_types) do
         acc |> connect(edge.from, edge.to) |> connect(edge.to, edge.from)
       else
         acc
@@ -76,9 +98,13 @@ defmodule LatentInvestigator.Provenance do
   end
 
   defp component_dependence(_graph, _component, [_single]), do: :single
+
   defp component_dependence(graph, component, _observations) do
     refs = MapSet.new(component)
-    edges = Enum.filter(graph.edges, &(MapSet.member?(refs, &1.from) and MapSet.member?(refs, &1.to)))
+
+    edges =
+      Enum.filter(graph.edges, &(MapSet.member?(refs, &1.from) and MapSet.member?(refs, &1.to)))
+
     if Enum.any?(edges, &(&1.type in @uncertain_types)), do: :uncertain, else: :known_dependent
   end
 
@@ -86,6 +112,7 @@ defmodule LatentInvestigator.Provenance do
 
   defp component(start, adjacency), do: walk([start], adjacency, MapSet.new()) |> MapSet.to_list()
   defp walk([], _adjacency, seen), do: seen
+
   defp walk([node | rest], adjacency, seen) do
     if MapSet.member?(seen, node) do
       walk(rest, adjacency, seen)

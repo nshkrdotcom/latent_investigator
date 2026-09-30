@@ -2,7 +2,9 @@
 
 ## Status
 
-**OFFLINE_IMPLEMENTED / RUNTIME_QC_REQUIRED**
+**LOCAL_RUNTIME_QC_PASSED / LIVE_CHECKS_NOT_RUN**
+
+Receiving-agent runtime QC completed on 2026-09-29. See [the runtime QC report](docs/RUNTIME_QC.md) for toolchain, dependency paths, repairs, exact commands, tests, smoke/replay, and live availability. The remaining original handoff below preserves authoring context.
 
 The complete standalone Elixir application, tests, simulator, experiment runners, artifact/replay layer, documentation, and frozen v1.1 specification are written.
 

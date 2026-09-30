@@ -11,10 +11,27 @@ defmodule LatentInvestigator.Judgment do
   }
 
   defstruct [
-    :id, :kind, :subject_ref, :world_id, :observation_id, :value, :ordinal_weight,
-    :provider, :model, :provider_confidence, :distribution, :latency_ms, :usage,
-    :cost, :round, :request_id, :batch_id, :batch_position, metadata: %{}
+    :id,
+    :kind,
+    :subject_ref,
+    :world_id,
+    :observation_id,
+    :value,
+    :ordinal_weight,
+    :provider,
+    :model,
+    :provider_confidence,
+    :distribution,
+    :latency_ms,
+    :usage,
+    :cost,
+    :round,
+    :request_id,
+    :batch_id,
+    :batch_position,
+    metadata: %{}
   ]
+
   @type t :: %__MODULE__{}
 
   def compatibility_weight(value) when is_binary(value) do
@@ -27,13 +44,22 @@ defmodule LatentInvestigator.Judgment do
       _ -> nil
     end
   end
+
   def compatibility_weight(value) when is_atom(value), do: Map.get(@compatibility, value)
   def compatibility_weight(_), do: nil
 
   def new(attrs) do
     value = Util.get(attrs, :value)
     kind = Util.get(attrs, :kind)
-    weight = Util.get(attrs, :ordinal_weight, if(kind in [:observation_compatibility, "observation_compatibility"], do: compatibility_weight(value)))
+
+    weight =
+      Util.get(
+        attrs,
+        :ordinal_weight,
+        if(kind in [:observation_compatibility, "observation_compatibility"],
+          do: compatibility_weight(value)
+        )
+      )
 
     %__MODULE__{
       id: Util.string(Util.get(attrs, :id)),

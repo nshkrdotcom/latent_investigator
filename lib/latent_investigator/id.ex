@@ -15,6 +15,9 @@ defmodule LatentInvestigator.ID do
 
   @spec new(String.t() | atom()) :: String.t()
   def new(prefix) do
-    stable(prefix, {System.system_time(:nanosecond), System.unique_integer([:positive, :monotonic]), self()})
+    stable(
+      prefix,
+      {System.system_time(:nanosecond), System.unique_integer([:positive, :monotonic]), self()}
+    )
   end
 end

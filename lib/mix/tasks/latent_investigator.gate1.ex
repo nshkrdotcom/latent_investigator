@@ -6,9 +6,8 @@ defmodule Mix.Tasks.LatentInvestigator.Gate1 do
   @impl true
   def run(_args) do
     Mix.Task.run("app.start")
-    case LatentInvestigator.Experiment.Gate1.run() do
-      {:ok, result} -> Mix.shell().info(inspect(result.summary, pretty: true))
-      {:error, reason} -> Mix.raise("Gate 1 failed: #{inspect(reason)}")
-    end
+
+    {:ok, result} = LatentInvestigator.Experiment.Gate1.run()
+    Mix.shell().info(inspect(result.summary, pretty: true))
   end
 end

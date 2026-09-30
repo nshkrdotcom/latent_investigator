@@ -23,15 +23,26 @@ defmodule LatentInvestigator.Constraint do
     observation_ids = Map.keys(inv.observations) |> MapSet.new()
 
     actor_refs =
-      Enum.flat_map(world.actor_roles, &[Util.get(&1, :actor_id)]) ++
-      Enum.flat_map(world.actor_knowledge, &[Util.get(&1, :actor_id)]) ++
-      Enum.flat_map(world.source_hypotheses, &[Util.get(&1, :source_actor_id)])
+      (Enum.flat_map(world.actor_roles, &[Util.get(&1, :actor_id)]) ++
+         Enum.flat_map(world.actor_knowledge, &[Util.get(&1, :actor_id)]) ++
+         Enum.flat_map(world.source_hypotheses, &[Util.get(&1, :source_actor_id)]))
       |> Enum.reject(&is_nil/1)
 
-    observation_refs = world.source_hypotheses |> Enum.map(&Util.get(&1, :observation_id)) |> Enum.reject(&is_nil/1)
+    observation_refs =
+      world.source_hypotheses
+      |> Enum.map(&Util.get(&1, :observation_id))
+      |> Enum.reject(&is_nil/1)
 
-    actor_failures = for id <- actor_refs, not MapSet.member?(actor_ids, id), do: %{code: :unknown_actor_ref, ref: id}
-    obs_failures = for id <- observation_refs, not MapSet.member?(observation_ids, id), do: %{code: :unknown_observation_ref, ref: id}
+    actor_failures =
+      for id <- actor_refs,
+          not MapSet.member?(actor_ids, id),
+          do: %{code: :unknown_actor_ref, ref: id}
+
+    obs_failures =
+      for id <- observation_refs,
+          not MapSet.member?(observation_ids, id),
+          do: %{code: :unknown_observation_ref, ref: id}
+
     actor_failures ++ obs_failures
   end
 
@@ -39,19 +50,37 @@ defmodule LatentInvestigator.Constraint do
     Enum.flat_map(inv.observations, fn {_id, obs} ->
       target_id = Util.get(obs.metadata, :authenticates_observation_id)
       authenticated = obs.authenticated_source
+
       cond do
-        is_binary(target_id) and not is_nil(authenticated) -> source_conflict(world, target_id, authenticated)
-        not is_nil(authenticated) -> source_conflict(world, obs.id, authenticated)
-        true -> []
+        is_binary(target_id) and not is_nil(authenticated) ->
+          source_conflict(world, target_id, authenticated)
+
+        not is_nil(authenticated) ->
+          source_conflict(world, obs.id, authenticated)
+
+        true ->
+          []
       end
     end)
   end
 
   defp source_conflict(world, observation_id, authenticated) do
     case World.source_actor(world, observation_id) do
-      nil -> []
-      ^authenticated -> []
-      proposed -> [%{code: :authenticated_source_conflict, observation_id: observation_id, expected: authenticated, proposed: proposed}]
+      nil ->
+        []
+
+      ^authenticated ->
+        []
+
+      proposed ->
+        [
+          %{
+            code: :authenticated_source_conflict,
+            observation_id: observation_id,
+            expected: authenticated,
+            proposed: proposed
+          }
+        ]
     end
   end
 
@@ -68,8 +97,18 @@ defmodule LatentInvestigator.Constraint do
         end)
         |> Enum.flat_map(fn item ->
           by_time = Util.get(item, :by_time)
+
           if after?(by_time, observation.timestamp) do
-            [%{code: :knowledge_after_observation, actor_id: actor_id, fact_id: Util.get(item, :fact_id), by_time: by_time, observation_id: observation_id, observation_time: observation.timestamp}]
+            [
+              %{
+                code: :knowledge_after_observation,
+                actor_id: actor_id,
+                fact_id: Util.get(item, :fact_id),
+                by_time: by_time,
+                observation_id: observation_id,
+                observation_time: observation.timestamp
+              }
+            ]
           else
             []
           end
@@ -100,7 +139,14 @@ defmodule LatentInvestigator.Constraint do
           if world.mechanism_family == mechanism do
             []
           else
-            [%{code: :authenticated_mechanism_conflict, observation_id: obs.id, expected: mechanism, proposed: world.mechanism_family}]
+            [
+              %{
+                code: :authenticated_mechanism_conflict,
+                observation_id: obs.id,
+                expected: mechanism,
+                proposed: world.mechanism_family
+              }
+            ]
           end
 
         _ ->
@@ -113,12 +159,28 @@ defmodule LatentInvestigator.Constraint do
     Enum.flat_map(world.source_hypotheses, fn hypothesis ->
       actor_id = Util.get(hypothesis, :source_actor_id)
       mechanism = Util.get(hypothesis, :mechanism)
+
       case Map.get(inv.actors, actor_id) do
-        nil -> []
+        nil ->
+          []
+
         actor ->
-          if mechanism in ["published", "posted", "direct_message", :published, :posted, :direct_message] and
+          if mechanism in [
+               "published",
+               "posted",
+               "direct_message",
+               :published,
+               :posted,
+               :direct_message
+             ] and
                not (:publish in actor.capabilities or "publish" in actor.capabilities) do
-            [%{code: :actor_lacks_publish_capability, actor_id: actor_id, observation_id: Util.get(hypothesis, :observation_id)}]
+            [
+              %{
+                code: :actor_lacks_publish_capability,
+                actor_id: actor_id,
+                observation_id: Util.get(hypothesis, :observation_id)
+              }
+            ]
           else
             []
           end

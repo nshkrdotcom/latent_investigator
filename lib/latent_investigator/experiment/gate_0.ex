@@ -16,7 +16,13 @@ defmodule LatentInvestigator.Experiment.Gate0 do
         {:ok, env} = StrategicNetwork.new(seed, profile, case_class, access)
         {:ok, b0a} = Monolithic.run(env, StrategicNetwork, client, :single, opts)
         {:ok, b0b} = Monolithic.run(env, StrategicNetwork, client, :iterative, opts)
-        %{profile: profile, seed: seed, b0a: Common.score_baseline(b0a, StrategicNetwork), b0b: Common.score_baseline(b0b, StrategicNetwork)}
+
+        %{
+          profile: profile,
+          seed: seed,
+          b0a: Common.score_baseline(b0a, StrategicNetwork),
+          b0b: Common.score_baseline(b0b, StrategicNetwork)
+        }
       end
 
     {:ok, %{gate: :baseline_reconnaissance, results: results}}

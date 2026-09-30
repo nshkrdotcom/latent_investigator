@@ -2,7 +2,18 @@ defmodule LatentInvestigator.Evaluator.JudgmentRequest do
   @moduledoc "Deterministic bounded semantic request."
   alias LatentInvestigator.{ID, Util}
 
-  defstruct [:id, :kind, :state, :rubric, :world_id, :subject_refs, :observation_id, :round, metadata: %{}]
+  defstruct [
+    :id,
+    :kind,
+    :state,
+    :rubric,
+    :world_id,
+    :subject_refs,
+    :observation_id,
+    :round,
+    metadata: %{}
+  ]
+
   @type t :: %__MODULE__{}
 
   def new(attrs) do

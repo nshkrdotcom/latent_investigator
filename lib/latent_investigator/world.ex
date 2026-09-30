@@ -5,16 +5,34 @@ defmodule LatentInvestigator.World do
   @statuses [:alive, :rejected, :pruned, :merged]
 
   defstruct [
-    :id, :summary, :mechanism_family, :status, :fit_score, :redundancy_dominated_by,
-    actor_roles: [], actor_knowledge: [], causal_links: [], source_hypotheses: [],
-    assumptions: [], predictions: [], falsifiers: [], generation: %{}, hard_failures: [],
-    parent_ids: [], metadata: %{}
+    :id,
+    :summary,
+    :mechanism_family,
+    :status,
+    :fit_score,
+    :redundancy_dominated_by,
+    actor_roles: [],
+    actor_knowledge: [],
+    causal_links: [],
+    source_hypotheses: [],
+    assumptions: [],
+    predictions: [],
+    falsifiers: [],
+    generation: %{},
+    hard_failures: [],
+    parent_ids: [],
+    metadata: %{}
   ]
+
   @type t :: %__MODULE__{}
 
   def from_candidate(attrs, generation \\ %{}) do
     client_id = Util.get(attrs, :client_id)
-    id = if is_binary(client_id) and client_id != "", do: client_id, else: ID.stable("world", execution_shape(attrs))
+
+    id =
+      if is_binary(client_id) and client_id != "",
+        do: client_id,
+        else: ID.stable("world", execution_shape(attrs))
 
     %__MODULE__{
       id: id,
@@ -37,6 +55,7 @@ defmodule LatentInvestigator.World do
   end
 
   def execution_shape(%__MODULE__{} = world), do: execution_shape(Map.from_struct(world))
+
   def execution_shape(attrs) do
     %{
       mechanism_family: Util.get(attrs, :mechanism_family, "unknown"),
@@ -44,8 +63,10 @@ defmodule LatentInvestigator.World do
       actor_knowledge: normalize_list(Util.get(attrs, :actor_knowledge, [])),
       causal_links: normalize_list(Util.get(attrs, :causal_links, [])),
       source_hypotheses: normalize_list(Util.get(attrs, :source_hypotheses, [])),
-      assumptions: Enum.sort(Enum.map(Util.list(Util.get(attrs, :assumptions, [])), &to_string/1)),
-      predictions: Enum.sort(Enum.map(Util.list(Util.get(attrs, :predictions, [])), &to_string/1)),
+      assumptions:
+        Enum.sort(Enum.map(Util.list(Util.get(attrs, :assumptions, [])), &to_string/1)),
+      predictions:
+        Enum.sort(Enum.map(Util.list(Util.get(attrs, :predictions, [])), &to_string/1)),
       falsifiers: Enum.sort(Enum.map(Util.list(Util.get(attrs, :falsifiers, [])), &to_string/1))
     }
   end

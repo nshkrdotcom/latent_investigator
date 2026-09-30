@@ -10,13 +10,17 @@ defmodule LatentInvestigator.MixProject do
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
+      test_ignore_filters: [~r"^test/support/"],
       description: description(),
       package: package(),
       docs: docs(),
       deps: deps(),
-      aliases: aliases(),
-      preferred_cli_env: [ci: :test]
+      aliases: aliases()
     ]
+  end
+
+  def cli do
+    [preferred_envs: [ci: :test]]
   end
 
   def application do
@@ -39,7 +43,8 @@ defmodule LatentInvestigator.MixProject do
       links: %{
         "GitHub" => @source_url
       },
-      files: ~w(lib config guides assets .formatter.exs mix.exs README.md LICENSE CHANGELOG.md VERSION)
+      files:
+        ~w(lib config guides assets .formatter.exs mix.exs README.md LICENSE CHANGELOG.md VERSION)
     ]
   end
 
@@ -158,8 +163,10 @@ defmodule LatentInvestigator.MixProject do
 
   defp deps do
     [
-      {:system_one_sdk, path: "../system_one_sdk"},
-      {:inference, path: "../inference"},
+      {:system_one_sdk, path: "../system_one_sdk/packages/system_one_sdk"},
+      {:inference, "~> 0.5.1"},
+      {:agent_session_manager, "~> 0.17.3", only: [:dev, :test]},
+      {:codex_sdk, "~> 0.21.3", only: [:dev, :test]},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end

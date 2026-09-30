@@ -7,5 +7,6 @@ defmodule LatentInvestigator.RunnerSmokeTest do
     assert map_size(result.investigation.worlds) >= 2
     assert is_map(result.report.target_statuses)
     assert result.report.resource_summary.local_judgments > 0
+    assert result.report.resource_summary.frontier_calls == 0
   end
 end

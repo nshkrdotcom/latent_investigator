@@ -3,7 +3,19 @@ defmodule LatentInvestigator.Observation do
   alias LatentInvestigator.Util
 
   @enforce_keys [:id, :surface]
-  defstruct [:id, :round, :timestamp, :surface, :observation_type, :claimed_source, :authenticated_source, :provenance_ref, :access_level, metadata: %{}]
+  defstruct [
+    :id,
+    :round,
+    :timestamp,
+    :surface,
+    :observation_type,
+    :claimed_source,
+    :authenticated_source,
+    :provenance_ref,
+    :access_level,
+    metadata: %{}
+  ]
+
   @type t :: %__MODULE__{}
 
   def new(attrs) do

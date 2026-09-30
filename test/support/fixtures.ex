@@ -1,7 +1,14 @@
 defmodule LatentInvestigator.TestFixtures do
   alias LatentInvestigator.{Actor, Investigation, Judgment, Observation, Provenance, World}
 
-  def actor(id), do: Actor.new(%{id: id, public_profile: %{label: id}, capabilities: [:read, :publish], channel_access: [:shared_channel]})
+  def actor(id),
+    do:
+      Actor.new(%{
+        id: id,
+        public_profile: %{label: id},
+        capabilities: [:read, :publish],
+        channel_access: [:shared_channel]
+      })
 
   def observation(id, opts \\ []) do
     Observation.new(%{
@@ -24,7 +31,14 @@ defmodule LatentInvestigator.TestFixtures do
       actor_roles: [%{actor_id: source, role: Keyword.get(opts, :role, "source")}],
       actor_knowledge: [],
       causal_links: [],
-      source_hypotheses: [%{observation_id: Keyword.get(opts, :observation_id, "obs1"), source_actor_id: source, mechanism: "published", claimed_source_status: "unknown"}],
+      source_hypotheses: [
+        %{
+          observation_id: Keyword.get(opts, :observation_id, "obs1"),
+          source_actor_id: source,
+          mechanism: "published",
+          claimed_source_status: "unknown"
+        }
+      ],
       assumptions: Keyword.get(opts, :assumptions, []),
       predictions: Keyword.get(opts, :predictions, ["p1"]),
       falsifiers: Keyword.get(opts, :falsifiers, ["f1"])
@@ -50,7 +64,20 @@ defmodule LatentInvestigator.TestFixtures do
   end
 
   def compatibility(id, world_id, subject_ref, observation_id, weight, round \\ 0) do
-    value = Enum.at([:strongly_against, :against, :neutral, :supports, :strongly_supports], weight + 2)
-    Judgment.new(%{id: id, kind: :observation_compatibility, subject_ref: subject_ref, observation_id: observation_id, world_id: world_id, value: value, ordinal_weight: weight, provider: :oracle, model: "oracle", round: round})
+    value =
+      Enum.at([:strongly_against, :against, :neutral, :supports, :strongly_supports], weight + 2)
+
+    Judgment.new(%{
+      id: id,
+      kind: :observation_compatibility,
+      subject_ref: subject_ref,
+      observation_id: observation_id,
+      world_id: world_id,
+      value: value,
+      ordinal_weight: weight,
+      provider: :oracle,
+      model: "oracle",
+      round: round
+    })
   end
 end

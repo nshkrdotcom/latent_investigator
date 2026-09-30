@@ -4,7 +4,8 @@ defmodule LatentInvestigator.Evaluator do
   alias LatentInvestigator.Judgment
 
   @callback judge(Context.t(), JudgmentRequest.t()) :: {:ok, Judgment.t()} | {:error, term()}
-  @callback judge_many(Context.t(), [JudgmentRequest.t()]) :: {:ok, [Judgment.t()]} | {:error, term()}
+  @callback judge_many(Context.t(), [JudgmentRequest.t()]) ::
+              {:ok, [Judgment.t()]} | {:error, term()}
   @optional_callbacks judge_many: 2
 
   def judge_many(module, %Context{} = context, requests) do

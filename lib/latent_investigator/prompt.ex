@@ -19,9 +19,15 @@ defmodule LatentInvestigator.Prompt do
   end
 
   def local_judgment_batch(requests) when is_list(requests) and requests != [] do
-    payload = Enum.map(requests, fn request ->
-      %{request_id: request.id, kind: request.kind, state: request.state, rubric: request.rubric}
-    end)
+    payload =
+      Enum.map(requests, fn request ->
+        %{
+          request_id: request.id,
+          kind: request.kind,
+          state: request.state,
+          rubric: request.rubric
+        }
+      end)
 
     """
     You are making multiple bounded semantic judgments inside a larger investigation.
@@ -38,7 +44,22 @@ defmodule LatentInvestigator.Prompt do
   def generate(inv, mode, opts \\ []) do
     excluded = Keyword.get(opts, :excluded_families, [])
     rejected_ids = Keyword.get(opts, :rejected_worlds, [])
-    rejected = inv.worlds |> Map.take(rejected_ids) |> Map.values() |> Enum.map(&Map.take(Map.from_struct(&1), [:id, :summary, :mechanism_family, :hard_failures, :assumptions, :predictions]))
+
+    rejected =
+      inv.worlds
+      |> Map.take(rejected_ids)
+      |> Map.values()
+      |> Enum.map(
+        &Map.take(Map.from_struct(&1), [
+          :id,
+          :summary,
+          :mechanism_family,
+          :hard_failures,
+          :assumptions,
+          :predictions
+        ])
+      )
+
     """
     You are generating competing causal worlds, not selecting one favorite story.
     Mode: #{mode}

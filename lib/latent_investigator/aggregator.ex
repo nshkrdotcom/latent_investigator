@@ -9,27 +9,47 @@ defmodule LatentInvestigator.Aggregator do
     worlds = apply_redundancy_dominance(worlds, inv, units)
     worlds = Search.prune(worlds, opts)
     ranked = worlds |> Enum.filter(&(&1.status == :alive)) |> Search.rank()
-    snapshot = Enum.map(ranked, &%{id: &1.id, fit_score: &1.fit_score, mechanism_family: &1.mechanism_family})
-    world_states = Enum.map(worlds, &%{id: &1.id, status: &1.status, fit_score: &1.fit_score, hard_failures: &1.hard_failures, redundancy_dominated_by: &1.redundancy_dominated_by})
+
+    snapshot =
+      Enum.map(
+        ranked,
+        &%{id: &1.id, fit_score: &1.fit_score, mechanism_family: &1.mechanism_family}
+      )
+
+    world_states =
+      Enum.map(
+        worlds,
+        &%{
+          id: &1.id,
+          status: &1.status,
+          fit_score: &1.fit_score,
+          hard_failures: &1.hard_failures,
+          redundancy_dominated_by: &1.redundancy_dominated_by
+        }
+      )
 
     %{
       inv
       | worlds: Map.new(worlds, &{&1.id, &1}),
         history:
           inv.history ++
-            [%{
-              type: :aggregation_completed,
-              round: inv.round,
-              evidence_units: length(units),
-              ranked_worlds: snapshot,
-              world_states: world_states
-            }]
+            [
+              %{
+                type: :aggregation_completed,
+                round: inv.round,
+                evidence_units: length(units),
+                ranked_worlds: snapshot,
+                world_states: world_states
+              }
+            ]
     }
   end
 
-  def evidence_units(%Investigation{} = inv), do: Provenance.evidence_units(inv.provenance, Investigation.observations(inv))
+  def evidence_units(%Investigation{} = inv),
+    do: Provenance.evidence_units(inv.provenance, Investigation.observations(inv))
 
   defp score_world(%World{status: status} = world, _inv, _units) when status != :alive, do: world
+
   defp score_world(world, inv, units) do
     weights = Enum.map(units, &unit_weight(inv, world.id, &1))
     present = Enum.reject(weights, &is_nil/1)
@@ -39,22 +59,31 @@ defmodule LatentInvestigator.Aggregator do
 
   defp unit_weight(inv, world_id, unit) do
     ids = MapSet.new(unit.observation_ids)
+
     matches =
       inv.judgments
       |> Map.values()
       |> Enum.filter(fn j ->
-        j.world_id == world_id and j.kind in [:observation_compatibility, "observation_compatibility"] and
+        j.world_id == world_id and
+          j.kind in [:observation_compatibility, "observation_compatibility"] and
           (j.observation_id in ids or j.subject_ref == unit.id)
       end)
 
     case matches do
-      [] -> nil
+      [] ->
+        nil
+
       values ->
         latest_round = values |> Enum.map(& &1.round) |> Enum.max()
         latest = Enum.filter(values, &(&1.round == latest_round))
+
         case latest do
-          [judgment] -> scale_weight(judgment.ordinal_weight, unit.dependence)
-          _ -> raise ArgumentError, "multiple compatibility judgments for world #{world_id}, evidence unit #{unit.id}, round #{latest_round}"
+          [judgment] ->
+            scale_weight(judgment.ordinal_weight, unit.dependence)
+
+          _ ->
+            raise ArgumentError,
+                  "multiple compatibility judgments for world #{world_id}, evidence unit #{unit.id}, round #{latest_round}"
         end
     end
   end
@@ -65,8 +94,13 @@ defmodule LatentInvestigator.Aggregator do
 
   defp apply_redundancy_dominance(worlds, inv, units) do
     alive = Enum.filter(worlds, &(&1.status == :alive))
+
     dominance =
-      for small <- alive, big <- alive, small.id != big.id, redundant_superset?(small, big, inv, units), into: %{} do
+      for small <- alive,
+          big <- alive,
+          small.id != big.id,
+          redundant_superset?(small, big, inv, units),
+          into: %{} do
         {big.id, small.id}
       end
 
@@ -80,7 +114,11 @@ defmodule LatentInvestigator.Aggregator do
 
   defp redundant_superset?(small, big, inv, units) do
     same_predictions = normalized(small.predictions) == normalized(big.predictions)
-    same_pattern = Enum.map(units, &unit_weight(inv, small.id, &1)) == Enum.map(units, &unit_weight(inv, big.id, &1))
+
+    same_pattern =
+      Enum.map(units, &unit_weight(inv, small.id, &1)) ==
+        Enum.map(units, &unit_weight(inv, big.id, &1))
+
     extra_assumptions = strict_superset?(big.assumptions, small.assumptions)
     extra_edges = superset?(big.causal_links, small.causal_links)
     extra_falsifiers = normalized(big.falsifiers) == normalized(small.falsifiers)

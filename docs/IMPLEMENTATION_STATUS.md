@@ -1,6 +1,10 @@
 # Implementation Status
 
-Status: **OFFLINE_IMPLEMENTED / RUNTIME_QC_REQUIRED**
+Status: **LOCAL_RUNTIME_QC_PASSED / LIVE_CHECKS_NOT_RUN**
+
+Runtime QC: format, warnings-as-errors compilation, 29 ExUnit tests (random and seed 0), persisted deterministic smoke, hash-verified replay, and `mix ci` passed. See [RUNTIME_QC.md](RUNTIME_QC.md). Actual nested sibling package roots are used with explicit user authorization. No live clients are configured; live checks remain **NOT_RUN**.
+
+The acceptance coverage below records the original source-only authoring status.
 
 The source tree, deterministic simulator, provider adapters, experiment runners, tests, documentation, and handoff are written. No Elixir/Erlang executable is present in the authoring environment.
 

@@ -5,37 +5,75 @@ defmodule LatentInvestigator.Experiment.Metrics do
   @statuses ~w(supported rejected unresolved)
 
   def target_metrics(report, evaluation_targets) do
-    expected = Map.new(evaluation_targets, fn t -> {to_string(Util.get(t, :id)), to_string(Util.get(t, :expected_status))} end)
+    expected =
+      Map.new(evaluation_targets, fn t ->
+        {to_string(Util.get(t, :id)), to_string(Util.get(t, :expected_status))}
+      end)
+
     predicted = normalize_statuses(report[:target_statuses] || report["target_statuses"] || %{})
-    pairs = Enum.map(expected, fn {id, truth} -> {truth, Map.get(predicted, id, "unresolved")} end)
+
+    pairs =
+      Enum.map(expected, fn {id, truth} -> {truth, Map.get(predicted, id, "unresolved")} end)
+
     target_metrics_from_pairs(pairs)
   end
 
   def target_metrics_from_pairs(pairs) when is_list(pairs) do
     per = Map.new(@statuses, &{&1, prf(pairs, &1)})
-    present = Enum.filter(@statuses, fn label -> Enum.any?(pairs, fn {truth, _pred} -> truth == label end) end)
+
+    present =
+      Enum.filter(@statuses, fn label ->
+        Enum.any?(pairs, fn {truth, _pred} -> truth == label end)
+      end)
+
     macro_f1 = present |> Enum.map(&per[&1].f1) |> mean()
-    %{macro_f1: macro_f1, per_status: per, confusion: confusion(pairs), count: length(pairs), pairs: pairs}
+
+    %{
+      macro_f1: macro_f1,
+      per_status: per,
+      confusion: confusion(pairs),
+      count: length(pairs),
+      pairs: pairs
+    }
   end
 
   def true_world_retention(worlds, truth, simulator) do
     Enum.any?(worlds, fn
-      %World{} = world -> simulator.match_world(truth, world).compatible
-      attrs when is_map(attrs) -> simulator.match_world(truth, World.from_candidate(attrs)).compatible
-      _ -> false
+      %World{} = world ->
+        simulator.match_world(truth, world).compatible
+
+      attrs when is_map(attrs) ->
+        simulator.match_world(truth, World.from_candidate(attrs)).compatible
+
+      _ ->
+        false
     end)
   end
 
   def resolution_balanced_accuracy(report, evaluation_targets) do
-    expected = Map.new(evaluation_targets, fn t -> {to_string(Util.get(t, :id)), to_string(Util.get(t, :expected_status))} end)
+    expected =
+      Map.new(evaluation_targets, fn t ->
+        {to_string(Util.get(t, :id)), to_string(Util.get(t, :expected_status))}
+      end)
+
     predicted = normalize_statuses(report[:target_statuses] || report["target_statuses"] || %{})
-    pairs = Enum.map(expected, fn {id, truth} -> {truth, Map.get(predicted, id, "unresolved")} end)
+
+    pairs =
+      Enum.map(expected, fn {id, truth} -> {truth, Map.get(predicted, id, "unresolved")} end)
+
     resolution_balanced_accuracy_pairs(pairs)
   end
 
   def resolution_balanced_accuracy_pairs(pairs) when is_list(pairs) do
-    resolution_pairs = Enum.map(pairs, fn {truth, pred} -> {resolution_class(truth), resolution_class(pred)} end)
-    present = [:resolved, :unresolved] |> Enum.filter(fn class -> Enum.any?(resolution_pairs, fn {truth, _} -> truth == class end) end)
+    resolution_pairs =
+      Enum.map(pairs, fn {truth, pred} -> {resolution_class(truth), resolution_class(pred)} end)
+
+    present =
+      [:resolved, :unresolved]
+      |> Enum.filter(fn class ->
+        Enum.any?(resolution_pairs, fn {truth, _} -> truth == class end)
+      end)
+
     present |> Enum.map(fn class -> recall_binary(resolution_pairs, class) end) |> mean()
   end
 
@@ -50,7 +88,9 @@ defmodule LatentInvestigator.Experiment.Metrics do
       result.investigation.history
       |> Enum.filter(&(&1[:type] == :aggregation_completed))
       |> Enum.sort_by(& &1[:round])
-      |> Enum.map(fn event -> {event[:round], Enum.map(event[:ranked_worlds] || [], & &1[:id])} end)
+      |> Enum.map(fn event ->
+        {event[:round], Enum.map(event[:ranked_worlds] || [], & &1[:id])}
+      end)
 
     recovery_from_rankings(snapshots, compatible_ids)
   end
@@ -59,6 +99,7 @@ defmodule LatentInvestigator.Experiment.Metrics do
     rankings =
       Enum.map(result.history, fn event ->
         worlds = event.output |> Util.get(:worlds, []) |> sort_baseline_worlds()
+
         ids =
           worlds
           |> Enum.with_index()
@@ -67,7 +108,13 @@ defmodule LatentInvestigator.Experiment.Metrics do
             {id, attrs}
           end)
 
-        compatible = MapSet.new(for {id, attrs} <- ids, simulator.match_world(truth, World.from_candidate(attrs)).compatible, do: id)
+        compatible =
+          MapSet.new(
+            for {id, attrs} <- ids,
+                simulator.match_world(truth, World.from_candidate(attrs)).compatible,
+                do: id
+          )
+
         {event.round, Enum.map(ids, &elem(&1, 0)), compatible}
       end)
 
@@ -85,7 +132,11 @@ defmodule LatentInvestigator.Experiment.Metrics do
         end
       end)
 
-    %{success: not is_nil(recovered), recovery_round: recovered, initial_false_leader: initial_false_leader}
+    %{
+      success: not is_nil(recovered),
+      recovery_round: recovered,
+      initial_false_leader: initial_false_leader
+    }
   end
 
   defp recovery_from_rankings(snapshots, compatible_ids) do
@@ -103,7 +154,11 @@ defmodule LatentInvestigator.Experiment.Metrics do
         end
       end)
 
-    %{success: not is_nil(recovered), recovery_round: recovered, initial_false_leader: initial_false_leader}
+    %{
+      success: not is_nil(recovered),
+      recovery_round: recovered,
+      initial_false_leader: initial_false_leader
+    }
   end
 
   defp sort_baseline_worlds(worlds) do
@@ -113,8 +168,16 @@ defmodule LatentInvestigator.Experiment.Metrics do
     end)
   end
 
-  defp normalize_statuses(value) when is_map(value), do: Map.new(value, fn {k, v} -> {to_string(k), to_string(v)} end)
-  defp normalize_statuses(value) when is_list(value), do: Map.new(value, fn item -> {to_string(item["target_id"] || item[:target_id]), to_string(item["status"] || item[:status])} end)
+  defp normalize_statuses(value) when is_map(value),
+    do: Map.new(value, fn {k, v} -> {to_string(k), to_string(v)} end)
+
+  defp normalize_statuses(value) when is_list(value),
+    do:
+      Map.new(value, fn item ->
+        {to_string(item["target_id"] || item[:target_id]),
+         to_string(item["status"] || item[:status])}
+      end)
+
   defp normalize_statuses(_), do: %{}
 
   defp prf(pairs, label) do
@@ -128,15 +191,22 @@ defmodule LatentInvestigator.Experiment.Metrics do
   end
 
   defp confusion(pairs) do
-    Enum.reduce(pairs, %{}, fn {truth, pred}, acc -> Map.update(acc, {truth, pred}, 1, &(&1 + 1)) end)
+    Enum.reduce(pairs, %{}, fn {truth, pred}, acc ->
+      Map.update(acc, {truth, pred}, 1, &(&1 + 1))
+    end)
   end
 
   defp resolution_class("unresolved"), do: :unresolved
   defp resolution_class(_), do: :resolved
+
   defp recall_binary(pairs, class) do
     positives = Enum.filter(pairs, fn {truth, _} -> truth == class end)
-    if positives == [], do: 0.0, else: Enum.count(positives, fn {_, pred} -> pred == class end) / length(positives)
+
+    if positives == [],
+      do: 0.0,
+      else: Enum.count(positives, fn {_, pred} -> pred == class end) / length(positives)
   end
+
   defp ratio(_n, 0), do: 0.0
   defp ratio(n, d), do: n / d
   defp mean([]), do: 0.0

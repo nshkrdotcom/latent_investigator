@@ -5,8 +5,15 @@ defmodule LatentInvestigator.AcquisitionTest do
 
   test "chooses an available action that separates surviving simulator-compatible worlds" do
     {:ok, env} = StrategicNetwork.new(1, :smoke, :transition, :public)
-    inv = Investigation.new(actors: StrategicNetwork.public_actors(env), observations: StrategicNetwork.initial_observations(env), provenance: StrategicNetwork.known_provenance(env))
+
+    inv =
+      Investigation.new(
+        actors: StrategicNetwork.public_actors(env),
+        observations: StrategicNetwork.initial_observations(env),
+        provenance: StrategicNetwork.known_provenance(env)
+      )
       |> Investigation.add_worlds(StrategicNetwork.oracle_candidates(env))
+
     actions = StrategicNetwork.available_actions(env, inv)
     {:ok, selected} = Acquisition.choose(inv, actions, StrategicNetwork)
     assert selected.separated_pairs > 0

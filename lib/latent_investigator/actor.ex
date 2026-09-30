@@ -3,7 +3,16 @@ defmodule LatentInvestigator.Actor do
   alias LatentInvestigator.Util
 
   @enforce_keys [:id]
-  defstruct [:id, public_profile: %{}, capabilities: [], known_facts: [], goals: [], channel_access: [], relationships: []]
+  defstruct [
+    :id,
+    public_profile: %{},
+    capabilities: [],
+    known_facts: [],
+    goals: [],
+    channel_access: [],
+    relationships: []
+  ]
+
   @type t :: %__MODULE__{}
 
   def new(attrs) do

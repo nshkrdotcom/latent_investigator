@@ -6,6 +6,7 @@ defmodule Mix.Tasks.LatentInvestigator.Replay do
   @impl true
   def run([run_dir]) do
     Mix.Task.run("app.start")
+
     case LatentInvestigator.Replay.verify(run_dir) do
       :ok -> :ok
       {:error, reason} -> Mix.raise("artifact hash verification failed: #{inspect(reason)}")

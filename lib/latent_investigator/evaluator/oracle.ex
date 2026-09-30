@@ -6,8 +6,10 @@ defmodule LatentInvestigator.Evaluator.Oracle do
   alias LatentInvestigator.Evaluator.{Context, JudgmentRequest}
 
   @impl true
-  def judge(%Context{oracle_fun: fun} = context, %JudgmentRequest{} = request) when is_function(fun, 1) do
+  def judge(%Context{oracle_fun: fun} = context, %JudgmentRequest{} = request)
+      when is_function(fun, 1) do
     started = System.monotonic_time(:microsecond)
+
     case fun.(request) do
       {:ok, result} -> {:ok, build(context, request, result, started)}
       result when is_map(result) -> {:ok, build(context, request, result, started)}
@@ -20,6 +22,7 @@ defmodule LatentInvestigator.Evaluator.Oracle do
 
   defp build(context, request, result, started) do
     value = Util.get(result, :value)
+
     Judgment.new(%{
       id: request.id,
       request_id: request.id,

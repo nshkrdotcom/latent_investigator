@@ -15,17 +15,27 @@ defmodule LatentInvestigator.Experiment.Smoke do
     with {:ok, env} <- StrategicNetwork.new(seed, profile, case_class, access) do
       worlds = StrategicNetwork.oracle_candidates(env)
 
-      Runner.run_environment(env,
+      Runner.run_environment(
+        env,
         Keyword.merge(opts,
           simulator: StrategicNetwork,
           generator: LatentInvestigator.Generator.Oracle,
-          generator_context: %GeneratorContext{provider: :oracle, model: "oracle-generator", config: %{worlds: worlds}},
+          generator_context: %GeneratorContext{
+            provider: :oracle,
+            model: "oracle-generator",
+            config: %{worlds: worlds}
+          },
           evaluator: LatentInvestigator.Evaluator.Oracle,
-          evaluator_context: %EvaluatorContext{provider: :oracle, model: "oracle", oracle_fun: &StrategicNetwork.oracle_judgment(env, &1)},
+          evaluator_context: %EvaluatorContext{
+            provider: :oracle,
+            model: "oracle",
+            oracle_fun: &StrategicNetwork.oracle_judgment(env, &1)
+          },
           disable_attack: true,
           disable_repair: true,
           arm: :smoke
-        ))
+        )
+      )
     end
   end
 end

@@ -6,9 +6,8 @@ defmodule Mix.Tasks.LatentInvestigator.Baseline do
   @impl true
   def run(_args) do
     Mix.Task.run("app.start")
-    case LatentInvestigator.Experiment.Gate0.run() do
-      {:ok, result} -> Mix.shell().info(inspect(result, pretty: true, limit: :infinity))
-      {:error, reason} -> Mix.raise("baseline reconnaissance failed: #{inspect(reason)}")
-    end
+
+    {:ok, result} = LatentInvestigator.Experiment.Gate0.run()
+    Mix.shell().info(inspect(result, pretty: true, limit: :infinity))
   end
 end
