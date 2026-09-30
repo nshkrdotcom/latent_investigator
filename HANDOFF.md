@@ -2,7 +2,9 @@
 
 ## Status
 
-**LOCAL_RUNTIME_QC_PASSED / LIVE_CHECKS_NOT_RUN**
+**LOCAL_RUNTIME_QC_PASSED / LIVE_BASELINE_AND_SYSTEM_ONE_PASSED / STRUCTURED_INTERRUPTED**
+
+Latest stopping point and resumption instructions: [Continuation handoff](docs/CONTINUATION_HANDOFF.md). Live baseline and System One checks passed; structured smoke was stopped at the user’s request before results.
 
 Receiving-agent runtime QC completed on 2026-09-29. See [the runtime QC report](docs/RUNTIME_QC.md) for toolchain, dependency paths, repairs, exact commands, tests, smoke/replay, and live availability. The remaining original handoff below preserves authoring context.
 

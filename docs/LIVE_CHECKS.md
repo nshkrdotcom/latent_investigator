@@ -1,7 +1,7 @@
 # Prepared live checks
 
-Prepared for System One `jev` and Inference 0.5.1 through ASM/Codex with
-`gpt-6.1-sol`. Live requests remain **NOT_RUN** at the user's requested pause.
+Prepared for System One `jev-latest` and Inference 0.5.1 through ASM/Codex with
+`gpt-6.1-sol`. Live execution was authorized after the preparation pause. See RUNTIME_QC.md for results.
 The Hex dependencies and lockfile were committed in `c648d1a`.
 
 From the project root, run the local preflight:
@@ -14,7 +14,7 @@ It constructs clients, validates ASM options and advertised completion-only/sche
 support, checks local Codex login status, and checks that `TYPESAFE_API_KEY` is
 present. It sends no model requests. `TYPESAFE_BASE_URL` optionally sets the
 TypeSafe endpoint. Keys are never printed. Models are pinned to the requested IDs;
-remote acceptance is unverified. No cheap-general lane is configured.
+Preflight does not verify remote acceptance. No cheap-general lane is configured.
 
 After approval to run live checks, start with:
 
@@ -45,7 +45,7 @@ mix run scripts/live_check.exs system-one
 
 The Codex client explicitly admits the agent-session adapter; Inference locks
 completion-only execution. Each request creates a fresh session, with a temporary
-working directory and medium reasoning effort, and a 300-second transport timeout.
+working directory and medium reasoning effort, and 300-second transport and stream timeouts. The temporary directory uses the explicit Git-check skip flag.
 The bridge permits the exact model ID to pass through even if its local registry
 is older. System One uses a 60-second HTTP timeout.
 

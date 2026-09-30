@@ -154,3 +154,48 @@ Commands and results:
 - `mix run -e 'source = File.read!("scripts/live_check.exs"); ast = Code.string_to_quoted!(source); Code.eval_quoted(quote do: fn -> unquote(ast) end); IO.puts("Live script compiled without execution")'`: exit 0; compiled without invoking the function or sending requests.
 - `mix format --check-formatted scripts/*.exs`: exit 0.
 - `git diff --check`: exit 0.
+
+## Authorized live execution — 2026-09-29
+
+The user authorized live execution after the preparation pause.
+
+- `mix run scripts/live_check.exs baseline`: initial exit 1 before inference;
+  Codex rejected `/tmp` outside a trusted Git repository. Enabled the existing
+  `skip_git_repo_check: true` provider option; completion-only/read-only remains.
+- `mix run scripts/live_preflight.exs`: exit 0 after that repair.
+- `mix run scripts/live_check.exs baseline`: next exit 1; ASM's independent
+  default 60-second stream timeout expired. Set `stream_timeout_ms: 300_000`
+  alongside `transport_timeout_ms: 300_000` and exclude the stream-only option
+  from provider option validation. Retrying at the same smoke/seed/round knobs.
+- `mix run scripts/live_check.exs system-one`: initial exit 1, HTTP 400:
+  `Unknown model: jev`, request `req_01a0efde362e71bfa81161b7a5de9f48`.
+- `mix run -e 'Code.require_file("scripts/live_setup.exs"); case SystemOneSDK.list_models(LatentInvestigator.Config.system_one_client!()) do {:ok, models} -> IO.inspect(models, limit: :infinity); {:error, error} -> IO.puts("Model listing failed: #{error.message}") end'`:
+  exit 0; HTTP 200 advertises `jev-latest` and `jev-preview`, request
+  `req_01a0efde81547958a138a48a9b3e5cb7`. Configured the stable Jev ID `jev-latest`.
+- `mix run scripts/live_check.exs system-one`: exit 0 after model-ID repair;
+  response model `jev-1.13.0`, typed blue answer 0.99, 281 input / 20 output
+  tokens, request `req_01a0efdee6b2793f9d19e18180e47419`.
+  Artifact: `tmp/live_checks/system-one-1790730757769.txt`.
+  This is a connection/typed-response check, not evaluator qualification.
+- `mix ci`: exit 0; 29 tests pass, seed 214068.
+- `mix format --check-formatted scripts/*.exs` and `git diff --check`: exit 0.
+- `mix run scripts/live_check.exs baseline` after both Codex configuration repairs:
+  exit 0, artifact `tmp/live_checks/baseline-1790731412738.txt`; B0a 2 calls,
+  B0b 6 calls; both macro-F1 1.0, resolution balanced accuracy 1.0, and true-world
+  retention. Both targets correct. Token/cost fields zero: reporting unavailable,
+  not zero actual usage. Committed metrics: `qc/2026-09-29/baseline.txt`.
+- `mix run scripts/live_check.exs structured`: **INTERRUPTED_BY_USER** before
+  result/persistence. SIGTERM at 15:24:45 HST; no structured pass/fail measurement.
+- `kill -TERM 1559050 1558952`: exit 0, terminated the active child Codex and
+  structured BEAM process. Poll returned SIGTERM shutdown notice and exit 0;
+  that is an orderly cancellation, not experiment success.
+- `ps -eo pid,ppid,args | rg 'live_check.exs structured|codex exec'`: only the
+  checking shell/rg remained; no model/check processes active.
+- Gate 1, Gate 2, larger profiles: **NOT_RUN**.
+
+Latest stopping instructions and next steps: [CONTINUATION_HANDOFF.md](CONTINUATION_HANDOFF.md).
+- Final stopping verification: `mix ci` exit 0, 29 tests passed, seed 331530;
+  `mix format --check-formatted scripts/*.exs` exit 0; `git diff --check` exit 0.
+- Delivery commands: stage only source/docs/sanitized QC evidence, commit the
+  stopping handoff, then `git push origin main`. Verify delivery against
+  `git rev-parse HEAD` and `git ls-remote origin refs/heads/main`.

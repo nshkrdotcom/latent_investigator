@@ -1,8 +1,10 @@
 # Explicitly loaded by the live scripts; constructing clients makes no model calls.
 query_opts = [
   allow_unknown_model: true,
+  skip_git_repo_check: true,
   reasoning_effort: :medium,
   transport_timeout_ms: 300_000,
+  stream_timeout_ms: 300_000,
   cwd: System.tmp_dir!()
 ]
 
@@ -18,7 +20,8 @@ frontier =
 
 {:ok, _} =
   ASM.Options.validate(
-    [provider: :codex, model: frontier.model, completion_only: true] ++ query_opts,
+    [provider: :codex, model: frontier.model, completion_only: true] ++
+      Keyword.drop(query_opts, [:stream_timeout_ms]),
     ASM.Options.Codex.schema()
   )
 
@@ -38,7 +41,7 @@ system_one =
   SystemOneSDK.new_client(
     api_key: api_key,
     base_url: System.get_env("TYPESAFE_BASE_URL", "https://api.typesafe.ai"),
-    model: "jev",
+    model: "jev-latest",
     timeout_ms: 60_000
   )
 

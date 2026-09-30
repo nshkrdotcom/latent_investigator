@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "configured_model": "jev-latest",
+  "response_model": "jev-1.13.0",
+  "request_id": "req_01a0efdee6b2793f9d19e18180e47419",
+  "http_status": 200,
+  "answers": {
+    "blue": {
+      "type": "noul",
+      "noul": 0.99
+    }
+  },
+  "usage": {
+    "input_tokens": 281,
+    "output_tokens": 20
+  },
+  "source_artifact": "tmp/live_checks/system-one-1790730757769.txt",
+  "source_sha256": "db72b9b689a67d1a4508541d5097b00a40a7443f08cdfe86edfc9879700ef960",
+  "note": "Sanitized summary; raw transport headers omitted."
+}

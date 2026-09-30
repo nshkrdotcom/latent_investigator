@@ -7,5 +7,5 @@ IO.puts(
   "PASS: local client construction, ASM option validation, completion-only/schema capabilities, Codex login, TypeSafe credential presence"
 )
 
-IO.puts("Frontier: codex / gpt-6.1-sol; System One: jev")
+IO.puts("Frontier: codex / gpt-6.1-sol; System One: jev-latest")
 IO.puts("Live availability and model acceptance: NOT_RUN. No model requests sent.")
