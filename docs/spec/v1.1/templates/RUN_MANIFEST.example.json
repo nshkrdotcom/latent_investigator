@@ -1,0 +1,44 @@
+{
+  "run_id": "example",
+  "spec_version": "2026-09-29-initial-experiment-spec-v1.1",
+  "seed": 12345,
+  "model_replicate": 1,
+  "arm": "structured_frontier",
+  "access_regime": "public",
+  "case_class": "transition",
+  "simulator": {
+    "profile": "medium",
+    "actors": 40,
+    "observations": 400,
+    "rendered_visible_tokens": null,
+    "round_budget": 6
+  },
+  "generator": {
+    "provider": "CONFIGURED",
+    "model": "CONFIGURED",
+    "prompt_hash": "sha256:...",
+    "schema_hash": "sha256:..."
+  },
+  "local_evaluator": {
+    "kind": "frontier",
+    "provider": "CONFIGURED",
+    "model": "CONFIGURED",
+    "batch_mode": "evidence_major",
+    "batch_size": 8
+  },
+  "search": {
+    "initial_candidates": 16,
+    "max_alive_worlds": 64,
+    "protected_diversity_slots": 8
+  },
+  "compute_budget": {
+    "frontier_token_target": null,
+    "frontier_call_target": null,
+    "match_tolerance_fraction": 0.10
+  },
+  "dependencies": {
+    "system_one_sdk": "local path ../system_one_sdk",
+    "inference": "local path ../inference"
+  },
+  "created_at": "ISO8601"
+}
